@@ -5,13 +5,9 @@
 ## Project description 
 This program is designed to build a patient monitoring system with a 
 patient client, a monitoring-station client, and a server database. 
-The server is 
+The server was 
 running on http://vcm-29744.vm.duke.edu:5000
 
-Assignment link: https://github.com/dward2/BME547/blob/main/Assignments/final_image_processor.md
-* Assignment add-on link: https://github.com/dward2/BME547/blob/main/Assignments/final_project_add_on.md
-
-HW GitHub link: https://github.com/BME547-Fall2022/final-project-blh 
 
 ## Authors: BLH team 
 **Ziwei He**
