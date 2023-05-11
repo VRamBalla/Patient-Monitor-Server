@@ -1,0 +1,238 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>database_definition module &#8212; Patient Monitoring Client/Server  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-database_definition">
+<span id="database-definition-module"></span><h1>database_definition module<a class="headerlink" href="#module-database_definition" title="Permalink to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="database_definition.Patient">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">database_definition.</span></span><span class="sig-name descname"><span class="pre">Patient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/database_definition.html#Patient"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#database_definition.Patient" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">MongoModel</span></code></p>
+<p>Definition of a patient record in the database</p>
+<p>All entries should at least have the unique medical_record_number,
+which is an int. Then an entry may or may not have the following
+* patient_name in the format of a string as “Firstname Lastname”
+* Heart rate: heart_rate_history and ecg_image_history will be
+synchronized and new values will use the same timestamp_str</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>heart_rate_history (dict) in the format</p></li>
+</ul>
+<p>of {timestamp_str: heart_rate_int}
+* ecg_image_history (dict) in the format of {timestamp_str:
+b64_str_ecg}</p>
+</div></blockquote>
+<ul class="simple">
+<li><p>Medical image: medical_filename_history and medical_image_history will be</p></li>
+</ul>
+<dl>
+<dt>synchronized and new values will use the same timestamp_str</dt><dd><ul class="simple">
+<li><p>medical_filename_history (dict) in the format</p></li>
+</ul>
+<p>of {timestamp_str: medical_filename_str}
+* medical_image_history (dict) in the format
+of {timestamp_str: b64_str_medical}</p>
+</dd>
+</dl>
+<dl class="py exception">
+<dt class="sig sig-object py" id="database_definition.Patient.DoesNotExist">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DoesNotExist</span></span><a class="headerlink" href="#database_definition.Patient.DoesNotExist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">DoesNotExist</span></code></p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="database_definition.Patient.MultipleObjectsReturned">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">MultipleObjectsReturned</span></span><a class="headerlink" href="#database_definition.Patient.MultipleObjectsReturned" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">MultipleObjectsReturned</span></code></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="database_definition.Patient.ecg_image_history">
+<span class="sig-name descname"><span class="pre">ecg_image_history</span></span><a class="headerlink" href="#database_definition.Patient.ecg_image_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>A field that stores a regular Python dictionary.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="database_definition.Patient.heart_rate_history">
+<span class="sig-name descname"><span class="pre">heart_rate_history</span></span><a class="headerlink" href="#database_definition.Patient.heart_rate_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>A field that stores a regular Python dictionary.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="database_definition.Patient.medical_filename_history">
+<span class="sig-name descname"><span class="pre">medical_filename_history</span></span><a class="headerlink" href="#database_definition.Patient.medical_filename_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>A field that stores a regular Python dictionary.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="database_definition.Patient.medical_image_history">
+<span class="sig-name descname"><span class="pre">medical_image_history</span></span><a class="headerlink" href="#database_definition.Patient.medical_image_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>A field that stores a regular Python dictionary.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="database_definition.Patient.medical_record_number">
+<span class="sig-name descname"><span class="pre">medical_record_number</span></span><a class="headerlink" href="#database_definition.Patient.medical_record_number" title="Permalink to this definition">¶</a></dt>
+<dd><p>A field that stores a Python int.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="database_definition.Patient.objects">
+<span class="sig-name descname"><span class="pre">objects</span></span><a class="headerlink" href="#database_definition.Patient.objects" title="Permalink to this definition">¶</a></dt>
+<dd><p>The default manager used for <code class="xref py py-class docutils literal notranslate"><span class="pre">MongoModel</span></code> instances.</p>
+<p>This implementation of <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseManager</span></code> uses
+<code class="xref py py-class docutils literal notranslate"><span class="pre">QuerySet</span></code> as its QuerySet class.</p>
+<p>This Manager class (accessed via the <code class="docutils literal notranslate"><span class="pre">objects</span></code> attribute on a
+<code class="xref py py-class docutils literal notranslate"><span class="pre">MongoModel</span></code>) is used by default for all MongoModel classes,
+unless another Manager instance is supplied as an attribute within the
+MongoModel definition.</p>
+<p>Managers have two primary functions:</p>
+<ol class="arabic simple">
+<li><p>Construct <code class="xref py py-class docutils literal notranslate"><span class="pre">QuerySet</span></code> instances for use when
+querying or working with <code class="xref py py-class docutils literal notranslate"><span class="pre">MongoModel</span></code> instances in bulk.</p></li>
+<li><p>Define collection-level functionality that can be reused across different
+MongoModel types.</p></li>
+</ol>
+<p>If you created a custom QuerySet that makes certain queries easier, for
+example, you will need to create a custom Manager type that returns this
+queryset using the <code class="xref py py-meth docutils literal notranslate"><span class="pre">from_queryset()</span></code>
+method:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">UserQuerySet</span><span class="p">(</span><span class="n">QuerySet</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">active</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Return only active users.&#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">raw</span><span class="p">({</span><span class="s2">&quot;active&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+
+<span class="k">class</span> <span class="nc">User</span><span class="p">(</span><span class="n">MongoModel</span><span class="p">):</span>
+    <span class="n">active</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">BooleanField</span><span class="p">()</span>
+    <span class="c1"># Add our custom Manager.</span>
+    <span class="n">users</span> <span class="o">=</span> <span class="n">Manager</span><span class="o">.</span><span class="n">from_queryset</span><span class="p">(</span><span class="n">UserQuerySet</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In the above example, we added a <cite>users</cite> attribute on <cite>User</cite> so that we can
+use the <cite>active</cite> method on our new QuerySet type:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">active_users</span> <span class="o">=</span> <span class="n">User</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">active</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>If we wanted every method on the QuerySet to examine active users <em>only</em>, we
+can do that by customizing the Manager itself:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">UserManager</span><span class="p">(</span><span class="n">Manager</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">get_queryset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Override get_queryset, so that every QuerySet created will</span>
+        <span class="c1"># have this filter applied.</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">UserManager</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_queryset</span><span class="p">()</span><span class="o">.</span><span class="n">raw</span><span class="p">(</span>
+            <span class="p">{</span><span class="s2">&quot;active&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+
+<span class="k">class</span> <span class="nc">User</span><span class="p">(</span><span class="n">MongoModel</span><span class="p">):</span>
+    <span class="n">active</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">BooleanField</span><span class="p">()</span>
+    <span class="n">users</span> <span class="o">=</span> <span class="n">UserManager</span><span class="p">()</span>
+
+<span class="n">active_users</span> <span class="o">=</span> <span class="n">User</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="database_definition.Patient.patient_name">
+<span class="sig-name descname"><span class="pre">patient_name</span></span><a class="headerlink" href="#database_definition.Patient.patient_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>A field that stores unicode strings.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Patient Monitoring Client/Server</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Ziwei He, Junqi Lu, Ramana Balla.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.2.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/Docs/database_definition.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

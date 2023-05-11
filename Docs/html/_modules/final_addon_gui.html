@@ -1,0 +1,282 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>final_addon_gui &#8212; Patient Monitoring Client/Server  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for final_addon_gui</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">base64</span>
+<span class="kn">import</span> <span class="nn">io</span>
+<span class="kn">import</span> <span class="nn">tkinter</span> <span class="k">as</span> <span class="nn">tk</span>
+<span class="kn">from</span> <span class="nn">tkinter</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">tkinter.ttk</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">idlelib.tooltip</span> <span class="kn">import</span> <span class="n">Hovertip</span>
+<span class="kn">from</span> <span class="nn">PIL</span> <span class="kn">import</span> <span class="n">Image</span><span class="p">,</span> <span class="n">ImageTk</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">tmp_patient_monitor_server</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">image</span> <span class="k">as</span> <span class="n">mpimg</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="s1">&#39;http://127.0.0.1:5000&#39;</span>
+
+
+<div class="viewcode-block" id="sort_history_dict"><a class="viewcode-back" href="../Docs/final_addon_gui.html#final_addon_gui.sort_history_dict">[docs]</a><span class="k">def</span> <span class="nf">sort_history_dict</span><span class="p">(</span><span class="n">history_dict</span><span class="p">):</span>
+    <span class="n">date_time_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">date_time_str</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">history_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">date_time_dict</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">date_time_str</span><span class="p">,</span> <span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1"> &#39;</span>
+                                                        <span class="s1">&#39;%H:%M:%S&#39;</span><span class="p">)]</span> <span class="o">=</span> \
+            <span class="n">data</span>
+
+    <span class="n">sorted_date_time_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">date_time_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span>  <span class="c1"># All the</span>
+    <span class="c1"># keys in this dict will be datetime object</span>
+
+    <span class="n">sorted_date_time_dict_out</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">date_time_obj</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">sorted_date_time_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">sorted_date_time_dict_out</span><span class="p">[</span><span class="n">date_time_obj</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1"> &#39;</span>
+                                                         <span class="s1">&#39;%H:%M:%S&#39;</span><span class="p">)]</span> <span class="o">=</span> \
+            <span class="n">data</span>
+    <span class="c1"># Now all the keys in sorted_date_time_dict_out are str from the</span>
+    <span class="c1"># corresponding datetime object following the format of &quot;%Y-%m-%d %H:%M:%S&quot;</span>
+    <span class="k">return</span> <span class="n">sorted_date_time_dict_out</span></div>
+
+
+<div class="viewcode-block" id="latest_value_in_history_dict"><a class="viewcode-back" href="../Docs/final_addon_gui.html#final_addon_gui.latest_value_in_history_dict">[docs]</a><span class="k">def</span> <span class="nf">latest_value_in_history_dict</span><span class="p">(</span><span class="n">history_dict</span><span class="p">):</span>
+    <span class="n">sorted_history_dict</span> <span class="o">=</span> <span class="n">sort_history_dict</span><span class="p">(</span><span class="n">history_dict</span><span class="p">)</span>
+    <span class="n">latest_value</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">sorted_history_dict</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">latest_value</span></div>
+
+
+<div class="viewcode-block" id="latest_timestamp_in_history_dict"><a class="viewcode-back" href="../Docs/final_addon_gui.html#final_addon_gui.latest_timestamp_in_history_dict">[docs]</a><span class="k">def</span> <span class="nf">latest_timestamp_in_history_dict</span><span class="p">(</span><span class="n">history_dict</span><span class="p">):</span>
+    <span class="n">sorted_history_dict</span> <span class="o">=</span> <span class="n">sort_history_dict</span><span class="p">(</span><span class="n">history_dict</span><span class="p">)</span>
+    <span class="n">latest_timestamp</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">sorted_history_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">latest_timestamp</span></div>
+
+
+<div class="viewcode-block" id="main_window"><a class="viewcode-back" href="../Docs/final_addon_gui.html#final_addon_gui.main_window">[docs]</a><span class="k">def</span> <span class="nf">main_window</span><span class="p">():</span>
+    <span class="n">root</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">Tk</span><span class="p">()</span>
+    <span class="n">root</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Add-on GUI&quot;</span><span class="p">)</span>
+
+    <span class="n">Label</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;med_rec_no&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                        <span class="n">row</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                        <span class="n">columnspan</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">Label</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;patient_name&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                                          <span class="n">row</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                          <span class="n">columnspan</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">Label</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;latest_hr&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                                       <span class="n">row</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                       <span class="n">columnspan</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">openNewWindow</span><span class="p">(</span><span class="n">pat</span><span class="p">):</span>
+        <span class="n">newWindow</span> <span class="o">=</span> <span class="n">Toplevel</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+        <span class="n">newWindow</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;New Window&quot;</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">cancel_cmd</span><span class="p">():</span>
+            <span class="n">newWindow</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
+
+        <span class="k">def</span> <span class="nf">view_cmd</span><span class="p">():</span>
+            <span class="n">h_hist</span> <span class="o">=</span> <span class="n">hr_hist</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+            <span class="n">timestamp</span> <span class="o">=</span> <span class="n">h_hist</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">20</span><span class="p">]</span>
+            <span class="n">Label</span><span class="p">(</span><span class="n">newWindow</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="n">timestamp</span><span class="p">)</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">row</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+
+            <span class="n">img_str</span> <span class="o">=</span> <span class="n">pat</span><span class="p">[</span><span class="s1">&#39;ecg_image_history&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">timestamp</span><span class="p">)</span>
+            <span class="n">image_bytes2</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">img_str</span><span class="p">)</span>
+            <span class="c1"># print(img_str)</span>
+            <span class="n">new2_filename</span> <span class="o">=</span> <span class="s1">&#39;ecg2.jpg&#39;</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">new2_filename</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">out_file</span><span class="p">:</span>
+                <span class="n">out_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">image_bytes2</span><span class="p">)</span>
+            <span class="n">pil_image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">new2_filename</span><span class="p">)</span>
+            <span class="n">pil_image</span> <span class="o">=</span> <span class="n">pil_image</span><span class="o">.</span><span class="n">resize</span><span class="p">((</span><span class="mi">300</span><span class="p">,</span> <span class="mi">300</span><span class="p">))</span>
+            <span class="c1"># os.remove(new2_filename)</span>
+
+            <span class="n">tk_image</span> <span class="o">=</span> <span class="n">ImageTk</span><span class="o">.</span><span class="n">PhotoImage</span><span class="p">(</span><span class="n">pil_image</span><span class="p">)</span>
+            <span class="n">image_label</span> <span class="o">=</span> <span class="n">Label</span><span class="p">(</span><span class="n">newWindow</span><span class="p">,</span> <span class="n">image</span><span class="o">=</span><span class="n">tk_image</span><span class="p">)</span>
+            <span class="n">image_label</span><span class="o">.</span><span class="n">image</span> <span class="o">=</span> <span class="n">tk_image</span>
+            <span class="n">image_label</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">row</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">columnspan</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+            <span class="c1"># image_label.image = &#39;&#39;</span>
+
+        <span class="n">Button</span><span class="p">(</span><span class="n">newWindow</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;Close&quot;</span><span class="p">,</span> <span class="n">command</span><span class="o">=</span><span class="n">cancel_cmd</span><span class="p">)</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                                                                 <span class="n">row</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                                                                 <span class="n">columnspan</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pat</span><span class="p">[</span><span class="s1">&#39;ecg_image_history&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">Label</span><span class="p">(</span><span class="n">newWindow</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;no hist&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sor_ecg</span> <span class="o">=</span> <span class="n">sort_history_dict</span><span class="p">(</span><span class="n">pat</span><span class="p">[</span><span class="s1">&#39;ecg_image_history&#39;</span><span class="p">])</span>
+            <span class="n">lat_ecg</span> <span class="o">=</span> <span class="n">latest_value_in_history_dict</span><span class="p">(</span><span class="n">sor_ecg</span><span class="p">)</span>
+
+            <span class="n">image_bytes</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">lat_ecg</span><span class="p">)</span>
+            <span class="c1"># new_filename = &#39;ecg&#39;+pat[&#39;patient_name&#39;]+&#39;.jpg&#39;</span>
+            <span class="n">new_filename</span> <span class="o">=</span> <span class="s1">&#39;ecg.jpg&#39;</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">new_filename</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">out_file</span><span class="p">:</span>
+                <span class="n">out_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">image_bytes</span><span class="p">)</span>
+            <span class="n">pil_image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">new_filename</span><span class="p">)</span>
+            <span class="n">pil_image</span> <span class="o">=</span> <span class="n">pil_image</span><span class="o">.</span><span class="n">resize</span><span class="p">((</span><span class="mi">300</span><span class="p">,</span> <span class="mi">300</span><span class="p">))</span>
+            <span class="n">tk_image</span> <span class="o">=</span> <span class="n">ImageTk</span><span class="o">.</span><span class="n">PhotoImage</span><span class="p">(</span><span class="n">pil_image</span><span class="p">)</span>
+            <span class="n">image_label</span> <span class="o">=</span> <span class="n">Label</span><span class="p">(</span><span class="n">newWindow</span><span class="p">,</span> <span class="n">image</span><span class="o">=</span><span class="n">tk_image</span><span class="p">)</span>
+            <span class="n">image_label</span><span class="o">.</span><span class="n">image</span> <span class="o">=</span> <span class="n">tk_image</span>
+            <span class="n">image_label</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">row</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">columnspan</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+
+            <span class="n">hr_hist_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">pat</span><span class="p">[</span><span class="s1">&#39;heart_rate_history&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+            <span class="n">Label</span><span class="p">(</span><span class="n">newWindow</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;hr hist&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">row</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">hr_hist</span> <span class="o">=</span> <span class="n">tk</span><span class="o">.</span><span class="n">StringVar</span><span class="p">()</span>
+            <span class="n">hr_hist_combo</span> <span class="o">=</span> <span class="n">Combobox</span><span class="p">(</span><span class="n">newWindow</span><span class="p">,</span> <span class="n">textvariable</span><span class="o">=</span><span class="n">hr_hist</span><span class="p">)</span>
+            <span class="n">hr_hist_combo</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">row</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">hr_hist_combo</span><span class="p">[</span><span class="s2">&quot;values&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hr_hist_list</span>
+            <span class="c1"># hr_hist_combo.state([&quot;readonly&quot;])</span>
+
+            <span class="n">Button</span><span class="p">(</span><span class="n">newWindow</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;View&quot;</span><span class="p">,</span> <span class="n">command</span><span class="o">=</span><span class="n">view_cmd</span><span class="p">)</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                                                                  <span class="n">row</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                                                  <span class="n">columnspan</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_all_med_number</span><span class="p">():</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span> <span class="o">+</span> <span class="s1">&#39;/api/monitor/all_med_number&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+            <span class="n">all_med_number_list</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">all_med_number_list</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="s1">&#39;(Server database is empty. Have at least 1 patient entry to &#39;</span>
+                <span class="s1">&#39;proceed.)&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">all_med_number_list</span>
+
+    <span class="k">def</span> <span class="nf">get_patient_data</span><span class="p">(</span><span class="n">record_number</span><span class="p">):</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="n">url</span> <span class="o">+</span> <span class="s1">&#39;/api/monitor/patient_info/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">record_number</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+            <span class="n">patient_info_dict</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">patient_info_dict</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">messagebox</span><span class="o">.</span><span class="n">showwarning</span><span class="p">(</span><span class="s1">&#39;Warning&#39;</span><span class="p">,</span>
+                                   <span class="s1">&#39;Patient information not found by the &#39;</span>
+                                   <span class="s1">&#39;given medical record number.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">patient_info_dict</span>
+
+    <span class="k">def</span> <span class="nf">auto_update</span><span class="p">():</span>
+        <span class="n">all_med_list</span> <span class="o">=</span> <span class="n">get_all_med_number</span><span class="p">()</span>
+        <span class="n">generator</span><span class="p">(</span><span class="n">all_med_list</span><span class="p">)</span>
+        <span class="n">root</span><span class="o">.</span><span class="n">after</span><span class="p">(</span><span class="mi">30000</span><span class="p">,</span> <span class="n">auto_update</span><span class="p">)</span>
+        <span class="c1"># newWindow.after(10000, auto_update)</span>
+
+    <span class="k">def</span> <span class="nf">generator</span><span class="p">(</span><span class="n">all_med_list</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">rec_no</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">all_med_list</span><span class="p">):</span>
+            <span class="n">pat</span> <span class="o">=</span> <span class="n">get_patient_data</span><span class="p">(</span><span class="n">rec_no</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pat</span><span class="p">[</span><span class="s1">&#39;heart_rate_history&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">lat_hr</span> <span class="o">=</span> <span class="s2">&quot;no hr&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">sorted_hr</span> <span class="o">=</span> <span class="n">sort_history_dict</span><span class="p">(</span><span class="n">pat</span><span class="p">[</span><span class="s1">&#39;heart_rate_history&#39;</span><span class="p">])</span>
+                <span class="n">pat</span><span class="p">[</span><span class="s1">&#39;heart_rate_history&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sorted_hr</span>
+                <span class="n">lat_hr</span> <span class="o">=</span> <span class="n">latest_value_in_history_dict</span><span class="p">(</span><span class="n">sorted_hr</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">pat</span><span class="p">[</span><span class="s1">&#39;patient_name&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">pat</span><span class="p">[</span><span class="s1">&#39;patient_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&lt;no name&gt;&quot;</span>
+
+            <span class="n">Label</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="n">pat</span><span class="p">[</span><span class="s1">&#39;patient_name&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                                                       <span class="n">row</span><span class="o">=</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span>
+                                                       <span class="n">columnspan</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">Label</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="n">pat</span><span class="p">[</span><span class="s1">&#39;medical_record_number&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                                                <span class="n">row</span><span class="o">=</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span>
+                                                                <span class="n">columnspan</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">Label</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="n">lat_hr</span><span class="p">)</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                                          <span class="n">row</span><span class="o">=</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span>
+                                          <span class="n">columnspan</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">Button</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;ECG&quot;</span><span class="p">,</span>
+                   <span class="n">command</span><span class="o">=</span><span class="k">lambda</span> <span class="n">pat</span><span class="o">=</span><span class="n">pat</span><span class="p">:</span> <span class="n">openNewWindow</span><span class="p">(</span><span class="n">pat</span><span class="p">))</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
+                                                                    <span class="n">row</span><span class="o">=</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">auto_update</span><span class="p">()</span>
+    <span class="n">root</span><span class="o">.</span><span class="n">mainloop</span><span class="p">()</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main_window</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Patient Monitoring Client/Server</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Ziwei He, Junqi Lu, Ramana Balla.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.2.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

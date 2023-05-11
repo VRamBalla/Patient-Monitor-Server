@@ -1,0 +1,367 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>final_patient_monitor_server module &#8212; Patient Monitoring Client/Server  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-final_patient_monitor_server">
+<span id="final-patient-monitor-server-module"></span><h1>final_patient_monitor_server module<a class="headerlink" href="#module-final_patient_monitor_server" title="Permalink to this heading">¶</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="final_patient_monitor_server.empty_db_judge">
+<span class="sig-prename descclassname"><span class="pre">final_patient_monitor_server.</span></span><span class="sig-name descname"><span class="pre">empty_db_judge</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/final_patient_monitor_server.html#empty_db_judge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#final_patient_monitor_server.empty_db_judge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Judges whether a conencted database is empty</p>
+<p>This function iterates through all the entries in the connected database
+to count out the number of entries. If the number of entry is 0,
+it returns True to indicate the connected database is empty and false if
+it is not empty</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>True or False (bool): the judgement of whether the connected
+database is empty. True if empty and False if not empty</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="final_patient_monitor_server.get_all_med_number_handler">
+<span class="sig-prename descclassname"><span class="pre">final_patient_monitor_server.</span></span><span class="sig-name descname"><span class="pre">get_all_med_number_handler</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/final_patient_monitor_server.html#get_all_med_number_handler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#final_patient_monitor_server.get_all_med_number_handler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain all the medical record numbers in the connected database</p>
+<p>This function is the handler of the route ‘/api/monitor/all_med_number’.
+It first calls on a function that judges whether the connected database
+is empty, and then calls on get_all_med_number_worker() that will obtain
+all the record number if there’s at least 1 or [‘Database is empty. Add
+in data from patient GUI first’] if there’s none. Finally, it returns
+the obtained record number list back to the client with the status code.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>jsonify(all_med_number_list): all_med_number_list will be a list
+that contains all the medical record number in the database or
+simply [‘Database is empty. Add in data from patient GUI first’] if
+the database has no record at all. It will be jsonified to send
+back to the client
+status (int): 200 if the database has at least 1 record; 400 if the
+database has no records at all</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="final_patient_monitor_server.get_all_med_number_worker">
+<span class="sig-prename descclassname"><span class="pre">final_patient_monitor_server.</span></span><span class="sig-name descname"><span class="pre">get_all_med_number_worker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">empty_db_judgement</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/final_patient_monitor_server.html#get_all_med_number_worker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#final_patient_monitor_server.get_all_med_number_worker" title="Permalink to this definition">¶</a></dt>
+<dd><p>The real working function that obtain all the medical record number
+in the database</p>
+<p>Based on the empty_db_judgement, this function decides whether to simply
+return [‘Database is empty. Add in data from patient GUI first’],
+400 to indicate the database is empty or to iterate through all the
+record numbers in the database to make a list and return that list with
+200</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>med_number_list (list of int): if the database contains at</p>
+</dd>
+</dl>
+<p>least 1 record number, it contains all the record number in the type of
+int; if the database is empty, then this will be [‘Database is empty.
+Add in data from patient GUI ‘ ‘first’]</p>
+<blockquote>
+<div><p>status (int): 200 if the database has at least 1 record; 400 if the
+database has no records at all</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="final_patient_monitor_server.get_database_connect_status_handler">
+<span class="sig-prename descclassname"><span class="pre">final_patient_monitor_server.</span></span><span class="sig-name descname"><span class="pre">get_database_connect_status_handler</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/final_patient_monitor_server.html#get_database_connect_status_handler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#final_patient_monitor_server.get_database_connect_status_handler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handler function that checks on the connection of the database</p>
+<p>This handler function calls on init_database() to try to connect to a
+database and return responses to the client to indicate the status of
+the connection</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>jsonify(msg) (jsonified str): jsonified ‘Successfully connected</p>
+</dd>
+</dl>
+<p>to the database’ if the database is successfully connected and ‘Failed
+to connect to the database’ if not</p>
+<blockquote>
+<div><p>status (int): this is the value to indicate the database connection
+status. 200 if the database is successfully connected and 400 if not</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="final_patient_monitor_server.info_process">
+<span class="sig-prename descclassname"><span class="pre">final_patient_monitor_server.</span></span><span class="sig-name descname"><span class="pre">info_process</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warn</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/final_patient_monitor_server.html#info_process"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#final_patient_monitor_server.info_process" title="Permalink to this definition">¶</a></dt>
+<dd><p>Process the patient information and return the result of processing.</p>
+<p>This function checks for the existing information of a record number in the
+database. If no record found, the information will be stored in the
+database. If there is existing record, this function updates the record
+unless the name in the record is different from the one provided by the
+user. Confirmation of the user is required to update the name in the
+database.</p>
+<dl>
+<dt>Args:</dt><dd><dl>
+<dt>in_data (dictionary): Patient information in the format of:</dt><dd><dl class="simple">
+<dt>{</dt><dd><p>“patient_record_no”: &lt;int&gt; (mandatory),
+“patient_name”: &lt;str&gt; (blank if not provide),
+“medical_img”: &lt;b64str&gt; (blank if not provide),
+“img_filename”: &lt;str&gt; (blank if not provide),
+“ECG_img”: &lt;b64str&gt; (blank if not provide),
+“heart_rate”: &lt;str&gt; (blank if not provide),</p>
+</dd>
+</dl>
+<p>}</p>
+</dd>
+</dl>
+<p>warn (string): “true” if the user confirms overwriting. Otherwise, it
+is “false”</p>
+</dd>
+<dt>Returns:</dt><dd><p>msg (string): Status message.
+status (integer): status code.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="final_patient_monitor_server.init_database">
+<span class="sig-prename descclassname"><span class="pre">final_patient_monitor_server.</span></span><span class="sig-name descname"><span class="pre">init_database</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">database_connection_str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/final_patient_monitor_server.html#init_database"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#final_patient_monitor_server.init_database" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize the databases by trying to connect to a MongoDB database</p>
+<p>This function is the real worker function that simply connects to a
+database in
+MongoDB using a try-except
+block by the database_connection_str. It will return corresponding
+messages and status code to indicate the connection status to the database</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>database_connection_str (str): the connection str obtained from
+mongodb to connect to a specific database</p>
+</dd>
+<dt>Returns:</dt><dd><p>msg (str): ‘Successfully connected to the database’ if the</p>
+</dd>
+</dl>
+<p>database is successfully connected and ‘Failed to connect to the
+database’ if not</p>
+<blockquote>
+<div><p>status (int): this is the value to indicate the database connection
+status. 200 if the database is successfully connected and 400 if not</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="final_patient_monitor_server.retrieve_patient_info_handler">
+<span class="sig-prename descclassname"><span class="pre">final_patient_monitor_server.</span></span><span class="sig-name descname"><span class="pre">retrieve_patient_info_handler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record_number</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/final_patient_monitor_server.html#retrieve_patient_info_handler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#final_patient_monitor_server.retrieve_patient_info_handler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Recieve record number from route request and return the patient info
+based on that record number</p>
+<p>This function is the handler of the route
+‘/api/monitor/patient_info/&lt;record_number&gt;’. It first receives input
+record number from the request. Then with supporting functions,
+it returns the found patient info dict from the database. Note that this
+route will only used by an GUI that asks user to select a record number
+from available record number inside the database. Since the patient info
+input GUI has already checked the data type of record number as int,
+this route doesn’t check again on whether that record number exist in
+the database and whether it is an int–both are guuarnteed by the
+patient info input GUI.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>record_number (int): a unique int that distinguishes a patient’s
+entry from others’</p>
+</dd>
+<dt>Returns:</dt><dd><p>jsonify(all_med_number_list): all_med_number_list will be a list
+that contains all the medical record number in the database or
+simply [‘Database is empty. Add in data from patient GUI first’] if
+the database has no record at all. It will be jsonified to send
+back to the client
+status (int): 200 if the database has at least 1 record; 400 if the
+database has no records at all</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="final_patient_monitor_server.retrieve_patient_info_worker">
+<span class="sig-prename descclassname"><span class="pre">final_patient_monitor_server.</span></span><span class="sig-name descname"><span class="pre">retrieve_patient_info_worker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record_number</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/final_patient_monitor_server.html#retrieve_patient_info_worker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#final_patient_monitor_server.retrieve_patient_info_worker" title="Permalink to this definition">¶</a></dt>
+<dd><p>The real working function that obtain the patient info by the given
+record number</p>
+<p>Based on the given record_number, this function uses a try-except block
+to go through all the records and try to obtain the patinet info based
+on the given record number.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>record_number (int): a unique int that distinguishes a patient’s
+entry from others’</p>
+</dd>
+<dt>Returns:</dt><dd><p>output (str or dict): can be ‘Something is wrong’ if the searching
+run into some issues or patient_info_dict if the corresponding
+patient info dict was found by the given record number. If a dict,
+the format for output will be {</p>
+</dd>
+</dl>
+<p>medical_record_number: int, patient_name: str, heart_rate_history: {
+timestmap_str: int}, ecg_image_history: {timestmap_str: b64_str},
+medical_filename_history: {timestmap_str: filename_str},
+medical_image_history: {timestmap_str: b64_str}}</p>
+<blockquote>
+<div><p>status (int): 200 if the corresponding info dict was successfully
+obtained; 400 if the searching was not successful</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="final_patient_monitor_server.save_info">
+<span class="sig-prename descclassname"><span class="pre">final_patient_monitor_server.</span></span><span class="sig-name descname"><span class="pre">save_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first_record</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/final_patient_monitor_server.html#save_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#final_patient_monitor_server.save_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save information in the database.</p>
+<p>This function creates new entry in the database and updates existing entry
+based on the uploaded information</p>
+<dl>
+<dt>Args:</dt><dd><dl>
+<dt>in_data (dictionary): Patient information in the format of:</dt><dd><dl class="simple">
+<dt>{</dt><dd><p>“patient_record_no”: &lt;int&gt; (mandatory),
+“patient_name”: &lt;str&gt; (blank if not provide),
+“medical_img”: &lt;b64str&gt; (blank if not provide),
+“img_filename”: &lt;str&gt; (blank if not provide),
+“ECG_img”: &lt;b64str&gt; (blank if not provide),
+“heart_rate”: &lt;str&gt; (blank if not provide),</p>
+</dd>
+</dl>
+<p>}</p>
+</dd>
+</dl>
+<p>first_record (boolean): True if there is no existing record in the
+database for the uploaded information. False if there is existing
+record for the uploaded information.</p>
+</dd>
+<dt>Returns:</dt><dd><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="final_patient_monitor_server.server_on">
+<span class="sig-prename descclassname"><span class="pre">final_patient_monitor_server.</span></span><span class="sig-name descname"><span class="pre">server_on</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/final_patient_monitor_server.html#server_on"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#final_patient_monitor_server.server_on" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicate server status</p>
+<p>This route is a simple route to indicate that the server is on</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>‘Server is on’ (str): a simple string to indicate that the server is on</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="final_patient_monitor_server.upload_handler">
+<span class="sig-prename descclassname"><span class="pre">final_patient_monitor_server.</span></span><span class="sig-name descname"><span class="pre">upload_handler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">warn</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/final_patient_monitor_server.html#upload_handler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#final_patient_monitor_server.upload_handler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Upload patient information handler</p>
+<p>Accept patient information upload. The patient information should be
+formatted as below:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>{</dt><dd><p>“patient_record_no”: &lt;int&gt; (mandatory)
+“patient_name”: &lt;str&gt; (blank if not provide)
+“medical_img”: &lt;b64str&gt; (blank if not provide)
+“img_filename”: &lt;str&gt; (blank if not provide)
+“ECG_img”: &lt;b64str&gt; (blank if not provide)
+“heart_rate”: &lt;str&gt; (blank if not provide)</p>
+</dd>
+</dl>
+<p>}</p>
+</div></blockquote>
+<p>The &lt;warn&gt; parameter indicates if the user wants to overwrite data. “true”
+means overwrite. Otherwise, the parameter is “false”</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>warn (string): “true” if the user confirms overwriting. Otherwise, it
+is “false”</p>
+</dd>
+<dt>Returns:</dt><dd><p>msg (string): Status message.
+status (integer): status code.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Patient Monitoring Client/Server</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Ziwei He, Junqi Lu, Ramana Balla.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.2.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/Docs/final_patient_monitor_server.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

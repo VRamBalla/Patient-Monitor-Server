@@ -1,0 +1,610 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ecg_analysis &#8212; Patient Monitoring Client/Server  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for ecg_analysis</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on Wed Oct  5 23:28:21 2022</span>
+
+<span class="sd">@author: david</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">math</span> <span class="k">as</span> <span class="nn">m</span>
+
+
+<div class="viewcode-block" id="read_data"><a class="viewcode-back" href="../Docs/ecg_analysis.html#ecg_analysis.read_data">[docs]</a><span class="k">def</span> <span class="nf">read_data</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Read a csv file containing ECG data and return a list with data points</span>
+
+<span class="sd">    This function read a single csv file containing ECG data. The first column</span>
+<span class="sd">    of the csv should be time in minutes and the second column in the csv file</span>
+<span class="sd">    should be voltage in mV. The function will read the file row by row and</span>
+<span class="sd">    return a nested list with each row in the csv file as the list element.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        path (string): Relative path of the data file, default value is none</span>
+<span class="sd">        filename (string): Strings containg file name</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        datapoints (list): Nested list containing each line of the file</span>
+<span class="sd">        file_path (string): Relative path and the file name for checking</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="kn">import</span> <span class="nn">csv</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Start analysing </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
+    <span class="n">datapoints</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">path</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">filename</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">path</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">filename</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">read</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">read</span><span class="p">:</span>
+            <span class="n">datapoints</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">datapoints</span><span class="p">,</span> <span class="n">file_path</span></div>
+
+
+<div class="viewcode-block" id="convert_data"><a class="viewcode-back" href="../Docs/ecg_analysis.html#ecg_analysis.convert_data">[docs]</a><span class="k">def</span> <span class="nf">convert_data</span><span class="p">(</span><span class="n">datapoints</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Filter abberant datapoints, convert data into float, and find voltage</span>
+<span class="sd">       extremes</span>
+
+<span class="sd">    This function converts numeric strings in ECG data into float. If the</span>
+<span class="sd">    function encounters non-numeric strings or missing data, it will remove</span>
+<span class="sd">    them from the data. This function also finds the extreme voltage value and</span>
+<span class="sd">    checks if the voltage is within the normal range.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        datapoints (list): List containing ECG data point strings</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        checked_data (list): List containing normal ECG data point numbers</span>
+<span class="sd">        extreme (tuple): A tuple containing the minimum and maximum of the</span>
+<span class="sd">        voltage</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">checked_data</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">outside_normal</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">V_1stnumeric</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">datapoints</span><span class="p">)):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">V</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">datapoints</span><span class="p">[</span><span class="n">index</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">V</span><span class="p">):</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Data missing at </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">index</span><span class="p">))</span>
+                <span class="k">continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">V</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">300</span> <span class="ow">and</span> <span class="n">outside_normal</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Voltage exceeds normal range (-300 ~ 300 &quot;</span>
+                                    <span class="s2">&quot;mV)&quot;</span><span class="p">)</span>
+                    <span class="n">outside_normal</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="n">V_1stnumeric</span><span class="p">:</span>
+                <span class="n">maxV</span><span class="p">,</span> <span class="n">minV</span> <span class="o">=</span> <span class="n">V</span><span class="p">,</span> <span class="n">V</span>
+                <span class="n">V_1stnumeric</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">V</span> <span class="o">&gt;</span> <span class="n">maxV</span><span class="p">:</span>
+                    <span class="n">maxV</span> <span class="o">=</span> <span class="n">V</span>
+                <span class="k">if</span> <span class="n">V</span> <span class="o">&lt;</span> <span class="n">minV</span><span class="p">:</span>
+                    <span class="n">minV</span> <span class="o">=</span> <span class="n">V</span>
+
+            <span class="n">T</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">datapoints</span><span class="p">[</span><span class="n">index</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">T</span><span class="p">):</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Data missing at </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">index</span><span class="p">))</span>
+                <span class="k">continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">checked_data</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">T</span><span class="p">,</span> <span class="n">V</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Data missing at </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">index</span><span class="p">))</span>
+            <span class="k">continue</span>
+    <span class="n">extreme</span> <span class="o">=</span> <span class="p">(</span><span class="n">minV</span><span class="p">,</span> <span class="n">maxV</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Adding voltage extremes to the analysis result&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">checked_data</span><span class="p">,</span> <span class="n">extreme</span></div>
+
+
+<div class="viewcode-block" id="split_data_and_duration"><a class="viewcode-back" href="../Docs/ecg_analysis.html#ecg_analysis.split_data_and_duration">[docs]</a><span class="k">def</span> <span class="nf">split_data_and_duration</span><span class="p">(</span><span class="n">checked_data</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Split the checked data into time and voltage</span>
+
+<span class="sd">    This function splits the checked data point list into a list of time and</span>
+<span class="sd">    a list of voltage, and calculate the duration of the ECG strip</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        checked_data (list): Nested list where each element is a datapoint</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        time (list): Time in seconds</span>
+<span class="sd">        voltage (list): Voltage in mV</span>
+<span class="sd">        duration (float): Duration of the ECG strip</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">time</span><span class="p">,</span> <span class="n">voltage</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">checked_data</span><span class="p">)):</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">checked_data</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">voltage</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">checked_data</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">time</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Adding duration to the analysis result&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">time</span><span class="p">,</span> <span class="n">voltage</span><span class="p">,</span> <span class="n">duration</span></div>
+
+
+<div class="viewcode-block" id="running_mean"><a class="viewcode-back" href="../Docs/ecg_analysis.html#ecg_analysis.running_mean">[docs]</a><span class="k">def</span> <span class="nf">running_mean</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span> <span class="n">window_size</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Calculate the running average of voltage</span>
+
+<span class="sd">    This function is a simplified version of the 1D uniform filter using the</span>
+<span class="sd">    &#39;reflect&#39; mode. It calculates the running avaerage of the voltage signal</span>
+<span class="sd">    based on the window size.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        y (list): 1d sample data list</span>
+<span class="sd">        duration (float): Duration of the sample time</span>
+<span class="sd">        window_size (float): Time frame in second for calculating running</span>
+<span class="sd">        average</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        run_mean (1d numpy array): Running average for each point of the</span>
+<span class="sd">        data</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        ```running_mean([12, -9, -6, 0, 1, 5], 6, 4)```</span>
+<span class="sd">        First, the function calculates the size for obtaining running average,</span>
+<span class="sd">        which is 6/6*4 = 4 in this case.</span>
+<span class="sd">        Then, the function expand the input list by &quot;reflect&quot; mode to:</span>
+<span class="sd">        w = [-9, 12, 12, -9, -6, 0, 1, 5, 5]</span>
+<span class="sd">        The running average for each point in the input list will be obtained</span>
+<span class="sd">        by:</span>
+<span class="sd">        run_mean[i] = (w[i] + w[i+1] + w[i+2] + w[i+3])/4</span>
+<span class="sd">        For example, run_mean[1] = (12+12-9-6)/4 = 2.25</span>
+
+<span class="sd">    Reference:</span>
+<span class="sd">        https://stackoverflow.com/questions/55207719/cant-understand-the-worki</span>
+<span class="sd">        ng-of-uniform-filter1d-function-imported-from-scipy</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">tmp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+    <span class="n">frequency</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">/</span><span class="n">duration</span>
+    <span class="n">size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">frequency</span> <span class="o">*</span> <span class="n">window_size</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">size</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Fail to calculate the running mean&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Window size can not exceed twice of the data &quot;</span>
+                         <span class="s2">&quot;duration&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Fail to calculate the running mean&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;window_size can not be 0&quot;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Invalid running average calculation when size is 1&quot;</span><span class="p">)</span>
+        <span class="n">run_mean</span> <span class="o">=</span> <span class="n">tmp</span>
+    <span class="k">elif</span> <span class="n">size</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">working_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">tmp</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">run_mean</span> <span class="o">=</span> <span class="p">(</span><span class="n">working_data</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">working_data</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span><span class="o">/</span><span class="mi">2</span>
+    <span class="k">elif</span> <span class="n">size</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">head</span> <span class="o">=</span> <span class="n">tmp</span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">size</span><span class="o">/</span><span class="mi">2</span><span class="p">):</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">tail</span> <span class="o">=</span> <span class="n">tmp</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="n">m</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">size</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">-</span><span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">working_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">head</span><span class="p">,</span> <span class="n">tmp</span><span class="p">,</span> <span class="n">tail</span><span class="p">))</span>
+        <span class="n">run_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">tmp</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">size</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span> <span class="n">tmp</span><span class="o">.</span><span class="n">size</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">size</span><span class="o">/</span><span class="mi">2</span><span class="p">)):</span>
+            <span class="n">run_mean</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="n">m</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">size</span><span class="o">/</span><span class="mi">2</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">working_data</span><span class="p">[</span>
+                     <span class="n">i</span> <span class="o">-</span> <span class="n">m</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">size</span><span class="o">/</span><span class="mi">2</span><span class="p">):</span><span class="n">i</span> <span class="o">+</span> <span class="n">m</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">size</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="n">size</span>
+    <span class="k">elif</span> <span class="n">size</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">num_add</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">size</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>  <span class="c1"># the result of size/2 is a float!</span>
+        <span class="n">head</span> <span class="o">=</span> <span class="n">tmp</span><span class="p">[</span><span class="n">num_add</span><span class="o">-</span><span class="mi">1</span><span class="p">::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">tail</span> <span class="o">=</span> <span class="n">tmp</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="n">num_add</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">working_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">head</span><span class="p">,</span> <span class="n">tmp</span><span class="p">,</span> <span class="n">tail</span><span class="p">))</span>
+        <span class="n">run_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">tmp</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_add</span><span class="p">,</span> <span class="n">tmp</span><span class="o">.</span><span class="n">size</span><span class="o">+</span><span class="n">num_add</span><span class="p">):</span>
+            <span class="n">run_mean</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="n">num_add</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">working_data</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="n">num_add</span><span class="p">:</span>
+                                         <span class="n">i</span><span class="o">+</span><span class="n">num_add</span><span class="p">])</span><span class="o">/</span><span class="n">size</span>
+    <span class="k">return</span> <span class="n">run_mean</span></div>
+
+
+<div class="viewcode-block" id="detect_peak"><a class="viewcode-back" href="../Docs/ecg_analysis.html#ecg_analysis.detect_peak">[docs]</a><span class="k">def</span> <span class="nf">detect_peak</span><span class="p">(</span><span class="n">voltage</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span> <span class="n">window_size</span><span class="p">,</span> <span class="n">offset_P</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Detect peaks in the ECG</span>
+
+<span class="sd">    This function detects peak groups by comparing each voltage value with its</span>
+<span class="sd">    running mean. If the voltage is greater than its running mean, the voltage</span>
+<span class="sd">    belongs to a peak group.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        voltage (list): A list containing all the voltage value in mV</span>
+<span class="sd">        duration (float): Duration of the ECG</span>
+<span class="sd">        window_size (float): Time frame in second for calculating running</span>
+<span class="sd">        average</span>
+<span class="sd">        offset_P (float): Offset factor for adjusting the running mean</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        peaks (list): A list containing the index of the peaks in the data</span>
+
+<span class="sd">    Reference:</span>
+<span class="sd">        heartpy package:</span>
+<span class="sd">        https://github.com/paulvangentcom/heartrate_analysis_python/tree/master</span>
+<span class="sd">        /heartpy</span>
+<span class="sd">        https://python-heart-rate-analysis-toolkit.readthedocs.io/en/latest/in</span>
+<span class="sd">        dex.html</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">run_mean</span> <span class="o">=</span> <span class="n">running_mean</span><span class="p">(</span><span class="n">voltage</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span> <span class="n">window_size</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">run_mean</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="n">offset_P</span>  <span class="c1"># 0.1 is an arbitrary value</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">run_mean</span><span class="p">)</span> <span class="o">*</span> <span class="n">offset_P</span>
+    <span class="n">run_mean</span> <span class="o">=</span> <span class="n">run_mean</span> <span class="o">+</span> <span class="nb">abs</span><span class="p">(</span><span class="n">offset</span><span class="p">)</span>
+    <span class="n">peak_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">voltage</span> <span class="o">&gt;</span> <span class="n">run_mean</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">peak_index</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">peaks</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="n">peaks</span>
+    <span class="n">peakY</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">voltage</span><span class="p">)[</span><span class="n">peak_index</span><span class="p">]</span>
+    <span class="n">peak_L_edge</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">]),</span>
+                                  <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">peak_index</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+                                  <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">peak_index</span><span class="p">)])))</span>
+    <span class="n">peaks</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">peak_L_edge</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">one_peak</span> <span class="o">=</span> <span class="n">peakY</span><span class="p">[</span><span class="n">peak_L_edge</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span><span class="n">peak_L_edge</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="n">tip_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">one_peak</span><span class="p">)</span> <span class="o">+</span> <span class="n">peak_L_edge</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">peaks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">peak_index</span><span class="p">[</span><span class="n">tip_index</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">peaks</span></div>
+
+
+<div class="viewcode-block" id="fit_peak"><a class="viewcode-back" href="../Docs/ecg_analysis.html#ecg_analysis.fit_peak">[docs]</a><span class="k">def</span> <span class="nf">fit_peak</span><span class="p">(</span><span class="n">voltage</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span> <span class="n">window_size</span><span class="o">=</span><span class="mf">0.75</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Find the R peak in the peak list</span>
+
+<span class="sd">    This function uses a series of predefined value to adjust the running</span>
+<span class="sd">    average and calculate the standard deviation between successive differences</span>
+<span class="sd">    (SDSD). The best fit of the offset factor is determined by the minimum</span>
+<span class="sd">    SDSD. Finally, the function returns a R peak list with the best offset</span>
+<span class="sd">    factor and reasonable interval.</span>
+<span class="sd">    When the data quality is poor, the function may fail to acquire R peak list</span>
+<span class="sd">    with reasonable interval. In this case, the function will simply seek the</span>
+<span class="sd">    offset factor that gives the smallest SDSD.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        voltage (list): A list containing all the voltage value in mV</span>
+<span class="sd">        duration (float): Duration of the ECG</span>
+<span class="sd">        window_size (float): Time frame in second for calculating running</span>
+<span class="sd">        average, default value is 0.75 s.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        R_peaks (list): List of R peak index in the data</span>
+<span class="sd">        offset[min_index] (float): Optimized offset factor (for testing)</span>
+
+<span class="sd">    Reference:</span>
+<span class="sd">        heartpy package:</span>
+<span class="sd">        https://github.com/paulvangentcom/heartrate_analysis_python/tree/master</span>
+<span class="sd">        /heartpy</span>
+<span class="sd">        https://python-heart-rate-analysis-toolkit.readthedocs.io/en/latest/in</span>
+<span class="sd">        dex.html</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">offset</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span>
+              <span class="mi">1</span><span class="p">,</span> <span class="mf">1.1</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">,</span> <span class="mf">1.3</span><span class="p">,</span> <span class="mf">1.4</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">,</span> <span class="mf">1.75</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">,</span> <span class="mf">2.75</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mf">3.5</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
+    <span class="n">sdsd</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">upbound</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">voltage</span><span class="p">)</span><span class="o">*</span><span class="mf">1.6</span><span class="o">/</span><span class="n">duration</span>
+    <span class="c1"># Set upper bound of the peak interval as 1.6s</span>
+    <span class="n">lowbound</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">voltage</span><span class="p">)</span><span class="o">*</span><span class="mf">0.24</span><span class="o">/</span><span class="n">duration</span>
+    <span class="c1"># set lower bound of the peak interval as 0.24 s based on the refractory</span>
+    <span class="c1"># period of the cardio muscle.</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">offset</span><span class="p">)):</span>
+        <span class="n">peaks</span> <span class="o">=</span> <span class="n">detect_peak</span><span class="p">(</span><span class="n">voltage</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span> <span class="n">window_size</span><span class="p">,</span> <span class="n">offset</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">peaks</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">peaks</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">sdsd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">))</span>
+            <span class="k">continue</span>
+        <span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">peaks</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">distance</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">upbound</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">distance</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">lowbound</span><span class="p">:</span>
+            <span class="n">sdsd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="s1">&#39;nan&#39;</span><span class="p">))</span>
+            <span class="k">continue</span>
+        <span class="n">sdsd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">distance</span><span class="p">))</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">min_index</span> <span class="o">=</span> <span class="n">argmin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">sdsd</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Signal is too noisy, readjusting offset factor&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">offset</span><span class="p">)):</span>
+            <span class="n">peaks</span> <span class="o">=</span> <span class="n">detect_peak</span><span class="p">(</span><span class="n">voltage</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span> <span class="n">window_size</span><span class="p">,</span> <span class="n">offset</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">peaks</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">peaks</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">sdsd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">))</span>
+                <span class="k">continue</span>
+            <span class="n">interval</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">peaks</span><span class="p">))</span>
+            <span class="n">sdsd</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">interval</span><span class="p">))</span>
+        <span class="n">min_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">sdsd</span><span class="p">))</span>
+    <span class="n">R_peaks</span> <span class="o">=</span> <span class="n">detect_peak</span><span class="p">(</span><span class="n">voltage</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span> <span class="n">window_size</span><span class="p">,</span> <span class="n">offset</span><span class="p">[</span><span class="n">min_index</span><span class="p">])</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Raw R peak indexes obtained by offset factor </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                  <span class="n">offset</span><span class="p">[</span><span class="n">min_index</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">R_peaks</span><span class="p">,</span> <span class="n">offset</span><span class="p">[</span><span class="n">min_index</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="argmin"><a class="viewcode-back" href="../Docs/ecg_analysis.html#ecg_analysis.argmin">[docs]</a><span class="k">def</span> <span class="nf">argmin</span><span class="p">(</span><span class="n">nparray</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Find the index of the smallest element in a numpy array</span>
+
+<span class="sd">    This function finds the index of the smallest element in a numpy array with</span>
+<span class="sd">    nan, inf, and numbers.</span>
+<span class="sd">    If the function encounters an all-nan array, it will raise valuerror.</span>
+<span class="sd">    If the array only contains nan and inf, the function returns the index of</span>
+<span class="sd">    the last nan element in the array. The reason for this is that we prefer to</span>
+<span class="sd">    obtain multiple peaks in the peak list instead of one single peak or no</span>
+<span class="sd">    peak, and we want to filter out as much noise signal as possible.</span>
+<span class="sd">    For arrays with a mixture of nan, inf, and numbers,the function will ignore</span>
+<span class="sd">    the nan and inf.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        nparray (array): 1d numpy array with nan, inf and/or numbers</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        min_index (integer): Index of the smallest element in the array</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">nan_num</span><span class="p">,</span> <span class="n">inf_num</span><span class="p">,</span> <span class="n">nan_index</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">nparray</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">nparray</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+            <span class="n">nan_num</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">nan_index</span> <span class="o">=</span> <span class="n">i</span>
+        <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">isinf</span><span class="p">(</span><span class="n">nparray</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+            <span class="n">inf_num</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="k">if</span> <span class="n">nan_num</span> <span class="o">==</span> <span class="n">nparray</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;All-nan array encountered&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">nan_num</span> <span class="o">+</span> <span class="n">inf_num</span> <span class="o">==</span> <span class="n">nparray</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+        <span class="n">min_index</span> <span class="o">=</span> <span class="n">nan_index</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">min_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanargmin</span><span class="p">(</span><span class="n">nparray</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">min_index</span></div>
+
+
+<div class="viewcode-block" id="analyse_peak"><a class="viewcode-back" href="../Docs/ecg_analysis.html#ecg_analysis.analyse_peak">[docs]</a><span class="k">def</span> <span class="nf">analyse_peak</span><span class="p">(</span><span class="n">voltage</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span> <span class="n">R_peaks</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Filter peak signal and find the bpm</span>
+
+<span class="sd">    This function filters the peak signal by checking each peak-to-peak</span>
+<span class="sd">    interval. It only accepts peaks with reasonable interval. For high frequecy</span>
+<span class="sd">    noisy signal, it tries to filter out the peaks with low voltage values</span>
+<span class="sd">    before checking peak-to-peak interval. Finally, the function obtains the</span>
+<span class="sd">    number of beats, bpm, and the beat timepoints with the corrected peaks.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        voltage (list): A list containing all the voltage value in mV</span>
+<span class="sd">        time (list): A list containing corresponding timepoints in s</span>
+<span class="sd">        duration (float): Duration of the ECG</span>
+<span class="sd">        R_peaks (list): List of R peaks index in the data</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        num_beats (float): Number of beats in float numbers</span>
+<span class="sd">        bpm (float): Heart rate in beats per minute</span>
+<span class="sd">        beats (list): List of timepoints when the beat occurs</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">        This function assumes that the peak signal is always stronger than</span>
+<span class="sd">        noise, so the function may fail to filter out the peak if the signal</span>
+<span class="sd">        is too noisy.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">R_peaks</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Too few peaks to analyse&quot;</span><span class="p">)</span>
+        <span class="n">num_beats</span><span class="p">,</span> <span class="n">bpm</span><span class="p">,</span> <span class="n">beats</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="s1">&#39;nan&#39;</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">num_beats</span><span class="p">,</span> <span class="n">bpm</span><span class="p">,</span> <span class="n">beats</span>
+
+    <span class="n">peak_interval</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">R_peaks</span><span class="p">))</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+    <span class="n">R</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">R_peaks</span><span class="p">)</span>
+    <span class="n">upbound</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">voltage</span><span class="p">)</span><span class="o">*</span><span class="mf">1.6</span><span class="o">/</span><span class="n">duration</span>
+    <span class="c1"># Set upper bound of the peak interval as 1.6s</span>
+    <span class="n">lowbound</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">voltage</span><span class="p">)</span><span class="o">*</span><span class="mf">0.24</span><span class="o">/</span><span class="n">duration</span>
+    <span class="c1"># set lower bound of the peak interval as 0.24 s based on the refractory</span>
+    <span class="c1"># period of the cardio muscle.</span>
+    <span class="n">flag</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">peak_interval</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">lowbound</span><span class="p">:</span>
+        <span class="n">flag</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">V</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">voltage</span><span class="p">)</span>
+        <span class="n">factor</span> <span class="o">=</span> <span class="mf">0.3</span>
+        <span class="n">peaky</span> <span class="o">=</span> <span class="n">V</span><span class="p">[</span><span class="n">R_peaks</span><span class="p">]</span>
+        <span class="n">run_mean</span> <span class="o">=</span> <span class="n">running_mean</span><span class="p">(</span><span class="n">peaky</span><span class="p">,</span> <span class="n">peaky</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="k">while</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">peak_interval</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">lowbound</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">run_mean</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">offset</span> <span class="o">=</span> <span class="mf">0.1</span><span class="o">*</span><span class="n">factor</span>  <span class="c1"># 0.1 is an arbitrary value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">offset</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">run_mean</span><span class="p">))</span><span class="o">*</span><span class="n">factor</span>
+            <span class="n">run_mean</span> <span class="o">=</span> <span class="n">run_mean</span> <span class="o">-</span> <span class="n">offset</span>
+            <span class="n">filtered</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">peaky</span> <span class="o">&gt;</span> <span class="n">run_mean</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">filtered</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Fail to analyse the signal due to strong noise&quot;</span><span class="p">)</span>
+                <span class="n">num_beats</span><span class="p">,</span> <span class="n">bpm</span><span class="p">,</span> <span class="n">beats</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="s1">&#39;nan&#39;</span><span class="p">)]</span>
+                <span class="k">return</span> <span class="n">num_beats</span><span class="p">,</span> <span class="n">bpm</span><span class="p">,</span> <span class="n">beats</span>
+            <span class="n">peak_interval</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">R</span><span class="p">[</span><span class="n">filtered</span><span class="p">])</span>
+            <span class="n">factor</span> <span class="o">-=</span> <span class="mf">0.04</span>
+
+    <span class="n">tmp</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">peak_interval</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">lowbound</span> <span class="o">&lt;=</span> <span class="n">peak_interval</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">upbound</span><span class="p">:</span>
+            <span class="n">tmp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+    <span class="n">tmp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+    <span class="n">normal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">tmp</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">tmp</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])))</span>
+    <span class="n">num_beats</span> <span class="o">=</span> <span class="n">normal</span><span class="o">.</span><span class="n">size</span>
+    <span class="n">bpm</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="mi">60</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">voltage</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">peak_interval</span><span class="p">[</span><span class="n">tmp</span><span class="p">])</span><span class="o">*</span><span class="n">duration</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">flag</span><span class="p">:</span>
+        <span class="n">filtered_x</span> <span class="o">=</span> <span class="n">R</span><span class="p">[</span><span class="n">filtered</span><span class="p">]</span>
+        <span class="n">beats</span> <span class="o">=</span> <span class="n">T</span><span class="p">[</span><span class="n">filtered_x</span><span class="p">[</span><span class="n">normal</span><span class="p">]]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">beats</span> <span class="o">=</span> <span class="n">T</span><span class="p">[</span><span class="n">R</span><span class="p">[</span><span class="n">normal</span><span class="p">]]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Analysis completed successfully. Adding the number of beats,&quot;</span>
+                 <span class="s2">&quot; bpm, and beat index into the analysis result&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">num_beats</span><span class="p">,</span> <span class="n">bpm</span><span class="p">,</span> <span class="n">beats</span></div>
+
+
+<div class="viewcode-block" id="remove_suffix"><a class="viewcode-back" href="../Docs/ecg_analysis.html#ecg_analysis.remove_suffix">[docs]</a><span class="k">def</span> <span class="nf">remove_suffix</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Remove the suffix of a file name</span>
+
+<span class="sd">    This function removes the suffix (jpg, csv, etc.) of a given file name. It</span>
+<span class="sd">    can handle file name containing extra dots.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        filename (string): File name</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        fname (string): File name string without suffix</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">tmp</span> <span class="o">=</span> <span class="n">filename</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[:</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">fname</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fname</span></div>
+
+
+<div class="viewcode-block" id="output"><a class="viewcode-back" href="../Docs/ecg_analysis.html#ecg_analysis.output">[docs]</a><span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="s1">&#39;Analysis&#39;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Save the analysis result in a JSON file</span>
+
+<span class="sd">    Save the analysis result in the dictionary into a JSON file in designated</span>
+<span class="sd">    folder. If the path is empty, the function will save the JSON file in the</span>
+<span class="sd">    active working directory (Usually in the folder where you run this script).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        filename (string): ECG data file name, including the filename extension</span>
+<span class="sd">        metrics (dictionary): ECG analysis result in the format of</span>
+<span class="sd">            {</span>
+<span class="sd">                &quot;duration&quot;: &lt;ECG strip length as a float&gt;,</span>
+<span class="sd">                &quot;voltage_extremes&quot;: [&lt;min voltage float&gt;, &lt;max voltage float&gt;],</span>
+<span class="sd">                &quot;num_beats&quot;: &lt;number of detected beats as an int&gt;,</span>
+<span class="sd">                &quot;mean_hr_bpm&quot;: &lt;heart rate as a float&gt;,</span>
+<span class="sd">                &quot;beats&quot;: [&lt;beat 1 time point as a float&gt;, ...]</span>
+<span class="sd">            }</span>
+<span class="sd">        path (string): Place to save the analysis result. The default is</span>
+<span class="sd">            &quot;Analysis&quot;</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        file_path (string): The relative path of the JSON file (for testing)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="kn">import</span> <span class="nn">json</span>
+    <span class="kn">import</span> <span class="nn">os</span>
+
+    <span class="n">fname</span> <span class="o">=</span> <span class="n">remove_suffix</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">path</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">fname</span> <span class="o">+</span> <span class="s1">&#39;.json&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">path</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="n">fname</span> <span class="o">+</span> <span class="s1">&#39;.json&#39;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">write_f</span><span class="p">:</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">metrics</span><span class="p">,</span> <span class="n">write_f</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;save the result in </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">file_path</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">file_path</span></div>
+
+
+<div class="viewcode-block" id="main_ECG_process"><a class="viewcode-back" href="../Docs/ecg_analysis.html#ecg_analysis.main_ECG_process">[docs]</a><span class="k">def</span> <span class="nf">main_ECG_process</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">path_output</span><span class="o">=</span><span class="s1">&#39;Analysis&#39;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Main function for ECG processing</span>
+
+<span class="sd">    This function collects ECG data and save the analysis result in the</span>
+<span class="sd">    designated folder. It can be called in other scripts for analysis purpose.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        filename (string): ECG dataset file name</span>
+<span class="sd">        path (string): The folder where the ECG dataset file is stored</span>
+<span class="sd">        path_output (string): Folder to save the analysis result.</span>
+<span class="sd">            The default is &#39;Analysis&#39;.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        time (list): Time points in seconds</span>
+<span class="sd">        voltage (list): Voltage in mV</span>
+<span class="sd">        metrics (dictionary): Analysis result in the format of</span>
+<span class="sd">            {</span>
+<span class="sd">                &quot;duration&quot;: &lt;ECG strip length as a float&gt;,</span>
+<span class="sd">                &quot;voltage_extremes&quot;: [&lt;min voltage float&gt;, &lt;max voltage float&gt;],</span>
+<span class="sd">                &quot;num_beats&quot;: &lt;number of detected beats as an int&gt;,</span>
+<span class="sd">                &quot;mean_hr_bpm&quot;: &lt;heart rate as a float&gt;,</span>
+<span class="sd">                &quot;beats&quot;: [&lt;beat 1 time point as a float&gt;, ...]</span>
+<span class="sd">            }</span>
+<span class="sd">        filepath (string): The path of the analysis json file</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s2">&quot;ecg_log.log&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+    <span class="n">datapoints</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">read_data</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+    <span class="c1"># Take datapoints from the return</span>
+    <span class="n">metrics</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">checked_data</span><span class="p">,</span> <span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;voltage_extremes&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">convert_data</span><span class="p">(</span><span class="n">datapoints</span><span class="p">)</span>
+    <span class="n">time</span><span class="p">,</span> <span class="n">voltage</span><span class="p">,</span> <span class="n">metrics</span><span class="p">[</span><span class="s2">&quot;duration&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">split_data_and_duration</span><span class="p">(</span><span class="n">checked_data</span><span class="p">)</span>
+
+    <span class="n">R_peaks</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">fit_peak</span><span class="p">(</span><span class="n">voltage</span><span class="p">,</span> <span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">])</span>
+    <span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;num_beats&#39;</span><span class="p">],</span> <span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;mean_hr_bpm&#39;</span><span class="p">],</span>\
+        <span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;beats&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">analyse_peak</span><span class="p">(</span><span class="n">voltage</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">],</span>
+                                        <span class="n">R_peaks</span><span class="p">)</span>
+    <span class="n">filepath</span> <span class="o">=</span> <span class="n">output</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">path_output</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">time</span><span class="p">,</span> <span class="n">voltage</span><span class="p">,</span> <span class="n">metrics</span><span class="p">,</span> <span class="n">filepath</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main_ECG_process</span><span class="p">(</span><span class="s2">&quot;test.csv&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">Patient Monitoring Client/Server</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Ziwei He, Junqi Lu, Ramana Balla.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.2.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
