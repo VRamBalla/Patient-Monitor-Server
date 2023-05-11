@@ -1,5 +1,4 @@
 # Final project: Patient Monitoring System 
-![img](https://github.com/BME547-Fall2022/final-project-blh/actions/workflows/pytest_runner.yml/badge.svg)
 
 
 ## Project description 
