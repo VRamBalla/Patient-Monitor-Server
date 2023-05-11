@@ -1,0 +1,17 @@
+ven2/
+venv/
+.idea/
+__pycache__/
+ecg_analysis/
+ecg_log.log
+test_ecg_analysis.py
+generate_dummy_data_MongoDB.py
+final_patient_monitor_client.py
+Monitor GUI workflow.vsdm
+_build
+_static
+_templates
+conf.py
+index.rst
+make.bat
+Makefile
